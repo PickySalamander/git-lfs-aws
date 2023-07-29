@@ -1,13 +1,11 @@
 import {Construct} from 'constructs';
-import {CfnOutput, RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
+import {RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {Bucket} from "aws-cdk-lib/aws-s3";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {Runtime} from "aws-cdk-lib/aws-lambda";
 import {Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {RetentionDays} from "aws-cdk-lib/aws-logs";
 import {LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
-import {ApiGateway} from "aws-cdk-lib/aws-events-targets";
-import {ApiEventSource} from "aws-cdk-lib/aws-lambda-event-sources";
 
 export class GitLfsAwsStack extends Stack {
 	private bucket:Bucket;
@@ -16,14 +14,14 @@ export class GitLfsAwsStack extends Stack {
 	constructor(scope:Construct, id:string, props?:StackProps) {
 		super(scope, id, props);
 
-		this.bucket = new Bucket(this, "GitLfsBucket",
+		this.bucket = new Bucket(this, "Bucket",
 			{
 				removalPolicy: RemovalPolicy.RETAIN
 			});
 
 		this.createRole();
 
-		const batchFunction = new NodejsFunction(this, "GitLfsBatch", {
+		const batchFunction = new NodejsFunction(this, "Batch", {
 			description: "Handler for batch uploads of LFS files",
 			runtime: Runtime.NODEJS_18_X,
 			entry: "src/functions/batch.ts",
@@ -36,7 +34,7 @@ export class GitLfsAwsStack extends Stack {
 			logRetention: RetentionDays.ONE_MONTH
 		});
 
-		const api = new RestApi(this, "GitLfsApi", {
+		const api = new RestApi(this, "Api", {
 			description: "API for Git LFS"
 		});
 
@@ -45,7 +43,7 @@ export class GitLfsAwsStack extends Stack {
 	}
 
 	private createRole():void {
-		this.role = new Role(this, "GitLfsIamRole", {
+		this.role = new Role(this, "Role", {
 			description: "Generic role for Lambdas in  stack",
 			assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
 			inlinePolicies: {
@@ -64,7 +62,20 @@ export class GitLfsAwsStack extends Stack {
 							resources: ["*"]
 						})
 					]
-				})
+				}),
+
+				S3Permissions: new PolicyDocument({
+					statements: [
+						new PolicyStatement({
+							effect: Effect.ALLOW,
+							actions: [
+								"s3:GetObject",
+								"s3:PutObject",
+							],
+							resources: [`${this.bucket.bucketArn}/*`]
+						})
+					]
+				}),
 			}
 		});
 	}

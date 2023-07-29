@@ -1,7 +1,7 @@
-import {S3} from "aws-sdk";
 import {Config} from "./config";
 import {APIGatewayProxyHandler} from "aws-lambda";
 import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda/trigger/api-gateway-proxy";
+import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3";
 
 /** Base class for all Lambda functions */
 export abstract class LambdaBase {
@@ -9,7 +9,7 @@ export abstract class LambdaBase {
 	private _config:Config;
 
 	/** Cached S3 client */
-	private _s3:S3;
+	private _s3:S3Client;
 
 	/** The bucket used to load the JSON */
 	protected readonly s3Bucket:string;
@@ -38,22 +38,22 @@ export abstract class LambdaBase {
 		if(!this._config) {
 			console.log(`Loading config from s3://${this.s3Bucket}/config.json`);
 
-			const s3Response = await this.s3.getObject({
+			const s3Response = await this.s3.send(new GetObjectCommand({
 				Key: "config.json",
 				Bucket: this.s3Bucket
-			}).promise();
+			}));
 
 			if(!s3Response.Body) {
 				throw `S3 result from ${this.s3Bucket}/config.json was empty`;
 			}
 
-			this._config = JSON.parse(s3Response.Body.toString());
+			this._config = JSON.parse(await s3Response.Body.transformToString());
 		}
 
 		return this._config;
 	}
 
-	protected webError(statusCode: number, message:string, internal?:String):APIGatewayProxyResult {
+	protected webError(statusCode:number, message:string, internal?:String):APIGatewayProxyResult {
 		if(internal) {
 			console.warn(`Returning ${statusCode} error to user: ${internal}`);
 		}
@@ -69,7 +69,7 @@ export abstract class LambdaBase {
 	/** Cached S3 client */
 	get s3() {
 		if(!this._s3) {
-			this._s3 = new S3();
+			this._s3 = new S3Client({});
 		}
 
 		return this._s3;

@@ -1,5 +1,8 @@
 import {LambdaBase} from "../util/lambda-base";
 import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda/trigger/api-gateway-proxy";
+import {BatchDownloadAction, BatchError, BatchResponse, BatchUploadAction} from "../util/batch-response";
+import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
+import {GetObjectCommand, HeadObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 
 class Batch extends LambdaBase {
 	protected async handle(event:APIGatewayProxyEvent):Promise<APIGatewayProxyResult> {
@@ -13,8 +16,6 @@ class Batch extends LambdaBase {
 			return this.webError(422, "Only basic transfer is supported");
 		}
 
-		console.log(`here ${body.operation}`);
-
 		switch(body.operation) {
 			case "upload":
 				return await this.handleUploads(body.objects);
@@ -26,30 +27,115 @@ class Batch extends LambdaBase {
 	}
 
 	private async handleUploads(objects:BatchRequestObject[]):Promise<APIGatewayProxyResult> {
-		console.log("here");
-
-		for(const object of objects) {
-			try {
-				await this.s3.headObject({
-					Bucket: this.s3Bucket,
-					Key: object.oid
-				}).promise();
-			} catch(e:any) {
-				if(e.code == "NotFound") {
-
-				} else {
-					throw e;
-				}
-			}
-
-			
+		const response:BatchResponse = {
+			transfer: "basic",
+			objects: [],
+			hash_algo: "sha256"
 		}
 
-		throw "unsupported operation";
+		const config = await this.getConfig();
+
+		for(const object of objects) {
+			const objectResp:BatchUploadAction = {
+				oid: object.oid,
+				size: object.size,
+				authenticated: true
+			};
+
+			response.objects.push(objectResp);
+
+			if(!await this.doesObjectExist(object.oid)) {
+				const signed = await getSignedUrl(this.s3, new PutObjectCommand({
+					Bucket: this.s3Bucket,
+					Key: object.oid,
+					ContentType: "application/octet-stream",
+					ContentLength: object.size
+				}), {
+					expiresIn: config.uploadExpiration
+				});
+
+				objectResp.actions = {
+					upload: {
+						href: signed,
+						expires_in: config.uploadExpiration
+					}
+				};
+			}
+		}
+
+		return {
+			statusCode: 200,
+			body: JSON.stringify(response),
+			headers: {"Content-Type": "application/vnd.git-lfs+json"},
+		}
 	}
 
 	private async handleDownloads(objects:BatchRequestObject[]):Promise<APIGatewayProxyResult> {
-		throw "unsupported operation";
+		const response:BatchResponse = {
+			transfer: "basic",
+			objects: [],
+			hash_algo: "sha256"
+		}
+
+		const config = await this.getConfig();
+
+		for(const object of objects) {
+			if(await this.doesObjectExist(object.oid)) {
+				const objectResp:BatchDownloadAction = {
+					oid: object.oid,
+					size: object.size,
+					authenticated: true
+				};
+
+				response.objects.push(objectResp);
+
+				const signed = await getSignedUrl(this.s3, new GetObjectCommand({
+					Bucket: this.s3Bucket,
+					Key: object.oid
+				}), {
+					expiresIn: config.downloadExpiration
+				});
+
+				objectResp.actions = {
+					download: {
+						href: signed,
+						expires_in: config.downloadExpiration
+					}
+				};
+			} else {
+				response.objects.push({
+					oid: object.oid,
+					size: object.size,
+					error: {
+						code: 404,
+						message: "Object not found"
+					}
+				} as BatchError);
+			}
+		}
+
+		return {
+			statusCode: 200,
+			body: JSON.stringify(response),
+			headers: {"Content-Type": "application/vnd.git-lfs+json"},
+		}
+	}
+
+	private async doesObjectExist(oid:string) {
+		try {
+			await this.s3.send(new HeadObjectCommand({
+				Bucket: this.s3Bucket,
+				Key: oid
+			}));
+		} catch(e:any) {
+			if(e.name == "NotFound") {
+				return false;
+			} else {
+				throw e;
+			}
+		}
+
+		return true;
 	}
 }
 
@@ -63,29 +149,6 @@ interface BatchRequest {
 interface BatchRequestObject {
 	oid:string;
 	size:number;
-}
-
-interface BatchResponse {
-	transfer:"basic";
-	objects:BatchResponseObject[]
-	hash_algo:string;
-}
-
-interface BatchResponseObject {
-	oid:string;
-	size:number;
-	authenticated:boolean;
-	actions?:{
-		href?:string;
-		header?:{ [key:string]:string };
-		expires_in?:number;
-		expires_at?:string;
-	},
-	error?: {
-		code:number;
-		message:string;
-	}
-	hash_algo:string;
 }
 
 

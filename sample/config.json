@@ -1,2 +1,4 @@
 {
+	"uploadExpiration": 5000,
+	"downloadExpiration": 5000
 }

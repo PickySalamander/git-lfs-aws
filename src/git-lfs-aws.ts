@@ -6,6 +6,5 @@ import {GitLfsAwsStack} from './git-lfs-aws-stack';
 
 const app = new cdk.App();
 new GitLfsAwsStack(app, 'GitLfsAwsStack', {
-	stackName: "git-lfs-aws",
 	description: "A Git LFS implementation that uses serverless exclusively"
 });
