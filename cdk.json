@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/git-lfs-aws.ts",
+  "app": "npx ts-node --prefer-ts-exts src/git-lfs-aws.ts",
   "watch": {
     "include": [
       "**"

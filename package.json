@@ -1,21 +1,20 @@
 {
   "name": "git-lfs-aws",
   "version": "0.1.0",
-  "bin": {
-    "git-lfs-aws": "bin/git-lfs-aws.js"
-  },
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "test": "jest",
-    "cdk": "cdk"
+    "build": "cdk synth --no-staging --quiet",
+    "clean": "rimraf cdk.out",
+    "deploy": "cdk deploy"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.119",
     "@types/jest": "^29.5.1",
     "@types/node": "20.1.7",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
     "aws-cdk": "2.85.0",
+    "aws-sdk": "^2.1425.0",
+    "jest": "^29.5.0",
+    "rimraf": "^5.0.1",
+    "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
     "typescript": "~5.0.4"
   },
