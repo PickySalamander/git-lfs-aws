@@ -1,4 +1,8 @@
 {
+	"repo": {
+		"owner": "PickySalamander",
+		"repo": "git-lfs-aws"
+	},
 	"uploadExpiration": 5000,
 	"downloadExpiration": 5000
 }

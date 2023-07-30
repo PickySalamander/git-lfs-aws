@@ -1,10 +1,11 @@
-import {LambdaBase} from "../util/lambda-base";
+import {LambdaFunctionBase} from "../util/lambda-base";
 import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda/trigger/api-gateway-proxy";
 import {BatchDownloadAction, BatchError, BatchResponse, BatchUploadAction} from "../util/batch-response";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import {GetObjectCommand, HeadObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
+import {UserContext} from "../util/user-context";
 
-class Batch extends LambdaBase {
+class Batch extends LambdaFunctionBase {
 	protected async handle(event:APIGatewayProxyEvent):Promise<APIGatewayProxyResult> {
 		if(!event.body) {
 			return this.webError(422, "no body", "Body was not specified");
@@ -16,8 +17,16 @@ class Batch extends LambdaBase {
 			return this.webError(422, "Only basic transfer is supported");
 		}
 
+		const user = event.requestContext.authorizer as UserContext;
+		if(!user) {
+			return this.webError(401, "auth not present");
+		}
+
 		switch(body.operation) {
 			case "upload":
+				if(!user.push) {
+					return this.webError(403, "no permission to write");
+				}
 				return await this.handleUploads(body.objects);
 			case "download":
 				return await this.handleDownloads(body.objects);

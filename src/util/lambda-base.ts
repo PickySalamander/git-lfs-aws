@@ -1,5 +1,5 @@
 import {Config} from "./config";
-import {APIGatewayProxyHandler} from "aws-lambda";
+import {APIGatewayAuthorizerEvent, APIGatewayAuthorizerHandler, APIGatewayProxyHandler} from "aws-lambda";
 import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda/trigger/api-gateway-proxy";
 import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3";
 
@@ -17,21 +17,6 @@ export abstract class LambdaBase {
 	constructor() {
 		this.s3Bucket = process.env.S3_BUCKET as string;
 	}
-
-	public handler:APIGatewayProxyHandler = async(event:APIGatewayProxyEvent):Promise<APIGatewayProxyResult> => {
-		try {
-			return await this.handle(event);
-		} catch(e) {
-			console.error("Failed to run, uncaught error", e);
-
-			return {
-				statusCode: 500,
-				body: '"internal server error"'
-			};
-		}
-	}
-
-	protected abstract handle(event:APIGatewayProxyEvent):Promise<APIGatewayProxyResult>;
 
 	/** Returns the loaded configuration if already loaded */
 	async getConfig():Promise<Config> {
@@ -76,3 +61,19 @@ export abstract class LambdaBase {
 	}
 }
 
+export abstract class LambdaFunctionBase extends LambdaBase {
+	public handler:APIGatewayProxyHandler = async(event:APIGatewayProxyEvent):Promise<APIGatewayProxyResult> => {
+		try {
+			return await this.handle(event);
+		} catch(e) {
+			console.error("Failed to run, uncaught error", e);
+
+			return {
+				statusCode: 500,
+				body: '"internal server error"'
+			};
+		}
+	}
+
+	protected abstract handle(event:APIGatewayProxyEvent):Promise<APIGatewayProxyResult>;
+}

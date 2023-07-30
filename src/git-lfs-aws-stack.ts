@@ -1,11 +1,11 @@
 import {Construct} from 'constructs';
-import {RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
+import {Duration, RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {Bucket} from "aws-cdk-lib/aws-s3";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {Runtime} from "aws-cdk-lib/aws-lambda";
 import {Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {RetentionDays} from "aws-cdk-lib/aws-logs";
-import {LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
+import {LambdaIntegration, RestApi, TokenAuthorizer} from "aws-cdk-lib/aws-apigateway";
 
 export class GitLfsAwsStack extends Stack {
 	private bucket:Bucket;
@@ -31,15 +31,38 @@ export class GitLfsAwsStack extends Stack {
 				"S3_BUCKET": this.bucket.bucketName,
 				"IS_PRODUCTION": "true"
 			},
-			logRetention: RetentionDays.ONE_MONTH
+			logRetention: RetentionDays.ONE_MONTH,
+			timeout: Duration.seconds(30)
 		});
+
+		const authFunction = new NodejsFunction(this, "LfsAuth", {
+			description: "Authorizes all requests to the server",
+			runtime: Runtime.NODEJS_18_X,
+			entry: "src/functions/lfs-auth.ts",
+			handler: "handler",
+			role: this.role,
+			environment: {
+				"S3_BUCKET": this.bucket.bucketName,
+				"IS_PRODUCTION": "true"
+			},
+			logRetention: RetentionDays.ONE_MONTH,
+			timeout: Duration.seconds(30)
+		})
+
+		const authorizer = new TokenAuthorizer(this, "Authorizer", {
+			handler: authFunction,
+			validationRegex: "^Basic [-0-9a-zA-Z\\+=]*$"
+		})
 
 		const api = new RestApi(this, "Api", {
-			description: "API for Git LFS"
+			description: "API for Git LFS",
 		});
 
-		api.root.addResource("objects")
-			.addResource("batch").addMethod("post", new LambdaIntegration(batchFunction));
+		api.root
+			.addResource("objects")
+			.addResource("batch").addMethod("post", new LambdaIntegration(batchFunction), {
+				authorizer: authorizer
+		});
 	}
 
 	private createRole():void {
