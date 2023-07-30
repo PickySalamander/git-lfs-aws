@@ -22,6 +22,8 @@ class Batch extends LambdaFunctionBase {
 			return this.webError(401, "auth not present");
 		}
 
+		console.log(`User ${user.username} requesting to batch ${body.operation} ${body.objects.length} objects`);
+
 		switch(body.operation) {
 			case "upload":
 				if(!user.push) {
@@ -43,6 +45,8 @@ class Batch extends LambdaFunctionBase {
 		}
 
 		const config = await this.getConfig();
+
+		console.log(`Generating ${objects.length} pre-signed urls with ${config.uploadExpiration} expiry`);
 
 		for(const object of objects) {
 			const objectResp:BatchUploadAction = {
@@ -72,6 +76,8 @@ class Batch extends LambdaFunctionBase {
 			}
 		}
 
+		console.log("Completed");
+
 		return {
 			statusCode: 200,
 			body: JSON.stringify(response),
@@ -87,6 +93,8 @@ class Batch extends LambdaFunctionBase {
 		}
 
 		const config = await this.getConfig();
+
+		console.log(`Generating ${objects.length} pre-signed urls with ${config.downloadExpiration} expiry`);
 
 		for(const object of objects) {
 			if(await this.doesObjectExist(object.oid)) {
@@ -112,6 +120,8 @@ class Batch extends LambdaFunctionBase {
 					}
 				};
 			} else {
+				console.warn(`Object ${object.oid} was not found in S3`);
+
 				response.objects.push({
 					oid: object.oid,
 					size: object.size,
@@ -122,6 +132,8 @@ class Batch extends LambdaFunctionBase {
 				} as BatchError);
 			}
 		}
+
+		console.log("Completed");
 
 		return {
 			statusCode: 200,
