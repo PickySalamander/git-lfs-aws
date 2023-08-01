@@ -38,7 +38,14 @@ export abstract class LambdaBase {
 		return this._config;
 	}
 
-	protected webError(statusCode:number, message:string, internal?:String):APIGatewayProxyResult {
+	/**
+	 * Helper function to return a web error to the LFS client
+	 * @param statusCode the http status code to return
+	 * @param message the message to give the client on why there was an error
+	 * @param internal an optional internal message to log to the console log
+	 * @return the proxy result
+	 */
+	protected static webError(statusCode:number, message:string, internal?:String):APIGatewayProxyResult {
 		if(internal) {
 			console.warn(`Returning ${statusCode} error to user: ${internal}`);
 		}
@@ -61,8 +68,10 @@ export abstract class LambdaBase {
 	}
 }
 
+/** Base class for API gateway proxy functions */
 export abstract class LambdaFunctionBase extends LambdaBase {
 	public handler:APIGatewayProxyHandler = async(event:APIGatewayProxyEvent):Promise<APIGatewayProxyResult> => {
+		//intercept all uncaught errors and return a message to the user properly
 		try {
 			return await this.handle(event);
 		} catch(e) {

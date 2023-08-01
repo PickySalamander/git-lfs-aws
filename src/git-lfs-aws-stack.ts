@@ -7,19 +7,26 @@ import {Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal} from "a
 import {RetentionDays} from "aws-cdk-lib/aws-logs";
 import {LambdaIntegration, RestApi, TokenAuthorizer} from "aws-cdk-lib/aws-apigateway";
 
+/** CDK code to build the Git LFS serverless stack */
 export class GitLfsAwsStack extends Stack {
+	/** Bucket that objects and config are stored */
 	private bucket:Bucket;
+
+	/** IAM role that the lambda functions use */
 	private role:Role;
 
 	constructor(scope:Construct, id:string, props?:StackProps) {
 		super(scope, id, props);
 
+		//create the bucket
 		this.bucket = new Bucket(this, "Bucket", {
 			removalPolicy: RemovalPolicy.RETAIN
 		});
 
+		//setup the iam role
 		this.createRole();
 
+		//create the /batch api function
 		const batchFunction = new NodejsFunction(this, "Batch", {
 			description: "Handler for batch uploads of LFS files",
 			runtime: Runtime.NODEJS_18_X,
@@ -34,6 +41,7 @@ export class GitLfsAwsStack extends Stack {
 			timeout: Duration.seconds(30)
 		});
 
+		//create the lambda custom authorizer for the api
 		const authFunction = new NodejsFunction(this, "LfsAuth", {
 			description: "Authorizes all requests to the server",
 			runtime: Runtime.NODEJS_18_X,
@@ -48,15 +56,18 @@ export class GitLfsAwsStack extends Stack {
 			timeout: Duration.seconds(30)
 		})
 
+		//setup the authorizer and attach the lambda function
 		const authorizer = new TokenAuthorizer(this, "Authorizer", {
 			handler: authFunction,
 			validationRegex: "^Basic [-0-9a-zA-Z\\+=]*$"
 		})
 
+		//setup the api
 		const api = new RestApi(this, "Api", {
 			description: "API for Git LFS",
 		});
 
+		//add the lambda functions and the authorizer to the api
 		api.root
 			.addResource("objects")
 			.addResource("batch").addMethod("post", new LambdaIntegration(batchFunction), {
@@ -64,6 +75,7 @@ export class GitLfsAwsStack extends Stack {
 		});
 	}
 
+	/** Create the IAM role for the lambda functions */
 	private createRole():void {
 		this.role = new Role(this, "Role", {
 			description: "Generic role for Lambdas in  stack",
