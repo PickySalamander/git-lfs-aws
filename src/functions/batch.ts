@@ -172,6 +172,5 @@ interface BatchRequestObject {
 	size:number;
 }
 
-
 // noinspection JSUnusedGlobalSymbols
 export const handler = new Batch().handler;

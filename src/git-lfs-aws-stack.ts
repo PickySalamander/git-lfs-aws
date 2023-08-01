@@ -14,10 +14,9 @@ export class GitLfsAwsStack extends Stack {
 	constructor(scope:Construct, id:string, props?:StackProps) {
 		super(scope, id, props);
 
-		this.bucket = new Bucket(this, "Bucket",
-			{
-				removalPolicy: RemovalPolicy.RETAIN
-			});
+		this.bucket = new Bucket(this, "Bucket", {
+			removalPolicy: RemovalPolicy.RETAIN
+		});
 
 		this.createRole();
 
@@ -61,7 +60,7 @@ export class GitLfsAwsStack extends Stack {
 		api.root
 			.addResource("objects")
 			.addResource("batch").addMethod("post", new LambdaIntegration(batchFunction), {
-				authorizer: authorizer
+			authorizer: authorizer
 		});
 	}
 

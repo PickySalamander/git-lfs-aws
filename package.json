@@ -4,6 +4,7 @@
   "scripts": {
     "build": "cdk synth --no-staging --quiet",
     "clean": "rimraf cdk.out",
+    "test": "jest",
     "deploy": "cdk deploy"
   },
   "devDependencies": {
