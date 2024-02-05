@@ -29,7 +29,7 @@ export class GitLfsAwsStack extends Stack {
 		//create the /batch api function
 		const batchFunction = new NodejsFunction(this, "Batch", {
 			description: "Handler for batch uploads of LFS files",
-			runtime: Runtime.NODEJS_18_X,
+			runtime: Runtime.NODEJS_20_X,
 			entry: "src/functions/batch.ts",
 			handler: "handler",
 			role: this.role,
@@ -44,7 +44,7 @@ export class GitLfsAwsStack extends Stack {
 		//create the lambda custom authorizer for the api
 		const authFunction = new NodejsFunction(this, "LfsAuth", {
 			description: "Authorizes all requests to the server",
-			runtime: Runtime.NODEJS_18_X,
+			runtime: Runtime.NODEJS_20_X,
 			entry: "src/functions/lfs-auth.ts",
 			handler: "handler",
 			role: this.role,
