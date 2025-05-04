@@ -1,6 +1,5 @@
 import {Config} from "./config";
-import {APIGatewayAuthorizerEvent, APIGatewayAuthorizerHandler, APIGatewayProxyHandler} from "aws-lambda";
-import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda/trigger/api-gateway-proxy";
+import {APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult} from "aws-lambda";
 import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3";
 
 /** Base class for all Lambda functions */

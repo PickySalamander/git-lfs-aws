@@ -23,46 +23,24 @@ export class GitLfsAwsStack extends Stack {
 			removalPolicy: RemovalPolicy.RETAIN
 		});
 
-		//setup the iam role
+		//set up the iam role
 		this.createRole();
 
 		//create the /batch api function
-		const batchFunction = new NodejsFunction(this, "Batch", {
-			description: "Handler for batch uploads of LFS files",
-			runtime: Runtime.NODEJS_20_X,
-			entry: "src/functions/batch.ts",
-			handler: "handler",
-			role: this.role,
-			environment: {
-				"S3_BUCKET": this.bucket.bucketName,
-				"IS_PRODUCTION": "true"
-			},
-			logRetention: RetentionDays.ONE_MONTH,
-			timeout: Duration.seconds(30)
-		});
+		const batchFunction = this.createFunction("Batch",
+			"Handler for batch uploads of LFS files", "batch.ts");
 
 		//create the lambda custom authorizer for the api
-		const authFunction = new NodejsFunction(this, "LfsAuth", {
-			description: "Authorizes all requests to the server",
-			runtime: Runtime.NODEJS_20_X,
-			entry: "src/functions/lfs-auth.ts",
-			handler: "handler",
-			role: this.role,
-			environment: {
-				"S3_BUCKET": this.bucket.bucketName,
-				"IS_PRODUCTION": "true"
-			},
-			logRetention: RetentionDays.ONE_MONTH,
-			timeout: Duration.seconds(30)
-		})
+		const authFunction = this.createFunction("LfsAuth",
+			"Authorizes all requests to the server", "lfs-auth.ts");
 
-		//setup the authorizer and attach the lambda function
+		//set up the authorizer and attach the lambda function
 		const authorizer = new TokenAuthorizer(this, "Authorizer", {
 			handler: authFunction,
 			validationRegex: "^Basic [-0-9a-zA-Z\\+=]*$"
 		})
 
-		//setup the api
+		//set up the api
 		const api = new RestApi(this, "Api", {
 			description: "API for Git LFS",
 		});
@@ -72,6 +50,30 @@ export class GitLfsAwsStack extends Stack {
 			.addResource("objects")
 			.addResource("batch").addMethod("post", new LambdaIntegration(batchFunction), {
 			authorizer: authorizer
+		});
+	}
+
+	private createFunction(name:string, description:string, file:string) {
+		//create the /batch api function
+		return new NodejsFunction(this, name, {
+			description: description,
+			runtime: Runtime.NODEJS_20_X,
+			entry: `src/functions/${file}`,
+			handler: "handler",
+			role: this.role,
+			environment: {
+				"S3_BUCKET": this.bucket.bucketName,
+				"IS_PRODUCTION": "true",
+				"NODE_OPTIONS": "--enable-source-maps",
+			},
+			bundling: {
+				externalModules: ["@aws-sdk/*"],
+				metafile: true,
+				minify: true,
+				sourceMap: true
+			},
+			logRetention: RetentionDays.ONE_MONTH,
+			timeout: Duration.seconds(30)
 		});
 	}
 

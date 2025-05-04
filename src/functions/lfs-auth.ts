@@ -1,9 +1,5 @@
-import {
-	APIGatewayAuthorizerResult,
-	APIGatewayTokenAuthorizerEvent,
-	APIGatewayTokenAuthorizerHandler
-} from "aws-lambda/trigger/api-gateway-authorizer";
 import {Octokit} from "octokit";
+import {APIGatewayAuthorizerResult, APIGatewayTokenAuthorizerEvent, APIGatewayTokenAuthorizerHandler} from "aws-lambda";
 import {LambdaBase} from "../util/lambda-base";
 import {GitPermissions} from "../util/git-permissions";
 

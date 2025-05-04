@@ -20,7 +20,7 @@ describe("Stack Test", () => {
 		for(const [name, lambda] of Object.entries(functions)) {
 			if(!name.startsWith("LogRetention")) {
 				expect(lambda.Properties.Role).not.toBeNull();
-				expect(lambda.Properties.Runtime).toBe("nodejs18.x")
+				expect(lambda.Properties.Runtime).toBe("nodejs20.x")
 				expect(lambda.Properties.Handler).toBe("index.handler")
 			}
 		}
@@ -29,9 +29,6 @@ describe("Stack Test", () => {
 		const api = template.findResources("AWS::ApiGateway::RestApi");
 		const apiName = Object.entries(api)[0][0];
 
-		// expect(stack).toHaveResourceLike
-		// template.findResources()
-		//
 		template.resourceCountIs("AWS::ApiGateway::Authorizer", 1);
 
 		template.hasResourceProperties("AWS::ApiGateway::Authorizer", {

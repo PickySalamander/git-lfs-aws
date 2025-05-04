@@ -1,5 +1,5 @@
 import {LambdaFunctionBase} from "../util/lambda-base";
-import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda/trigger/api-gateway-proxy";
+import {APIGatewayProxyEvent, APIGatewayProxyResult} from "aws-lambda";
 import {BatchDownloadAction, BatchError, BatchResponse, BatchUploadAction} from "../util/batch-response";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import {GetObjectCommand, HeadObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
