@@ -4,7 +4,7 @@ import {Bucket} from "aws-cdk-lib/aws-s3";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {Runtime} from "aws-cdk-lib/aws-lambda";
 import {Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
-import {RetentionDays} from "aws-cdk-lib/aws-logs";
+import {LogGroup, RetentionDays} from "aws-cdk-lib/aws-logs";
 import {LambdaIntegration, RestApi, TokenAuthorizer} from "aws-cdk-lib/aws-apigateway";
 
 /** CDK code to build the Git LFS serverless stack */
@@ -72,8 +72,20 @@ export class GitLfsAwsStack extends Stack {
 				minify: true,
 				sourceMap: true
 			},
-			logRetention: RetentionDays.ONE_MONTH,
+			logGroup: this.createLogGroup(name),
 			timeout: Duration.seconds(30)
+		});
+	}
+
+	/**
+	 * Create a new log group for a Lambda function
+	 * @param name The name of the function
+	 */
+	private createLogGroup(name:string) {
+		return new LogGroup(this, `${name}Logs`, {
+			logGroupName: `${this.stackName}/lambda/${name}`,
+			retention: RetentionDays.ONE_MONTH,
+			removalPolicy: RemovalPolicy.DESTROY
 		});
 	}
 

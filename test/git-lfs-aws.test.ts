@@ -1,6 +1,7 @@
 import {GitLfsAwsStack} from "../src/git-lfs-aws-stack";
 import {Template} from "aws-cdk-lib/assertions";
 import {App} from "aws-cdk-lib";
+import {describe, expect, test} from "vitest";
 
 describe("Stack Test", () => {
 	test('Stack Test', () => {
