@@ -17,6 +17,8 @@ I used both [git-lfs-s3](https://github.com/troyready/git-lfs-s3) and [Estranged
 2. Upload a `config.json` file to the newly created S3 bucket that was created (there is a sample [here](sample/config.json)).
 3. Add the API Gateway to your `.lfsconfig` file in your project.
 4. On your first pull / push your GitHub username and a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+	- https://github.com/settings/personal-access-tokens - to create a token, they should have read and write access to the code to make changes (called "Contents" in the permissions).
+  - Your password will be the token that was generated (eg. "github_pat_12345ABCD").
 
 ## Useful commands
 * `npm run build` compile all the Typescript, use only for local testing
