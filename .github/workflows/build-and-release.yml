@@ -47,6 +47,8 @@ jobs:
 
       - name: PNPM Setup
         uses: pnpm/action-setup@v6
+        with:
+          version: 11
 
       # Install dependencies
       - name: Install Node Dependencies
