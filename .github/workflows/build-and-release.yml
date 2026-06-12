@@ -1,0 +1,57 @@
+name: Build and Release
+run-name: "Building ${{ github.workflow }}-${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+# Kill previous builds that are currently running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # AWS region to deploy to
+  AWS_REGION: "us-east-1"
+
+  # Node version used to build the product
+  NODE_VERSION: "24"
+
+permissions:
+  id-token: write # This is required for requesting the JWT from AWS
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the branch code from git
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      # Authenticate with AWS
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_NUMBER }}:role/${{ vars.AWS_GITHUB_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Download and install the Node version used to build
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: PNPM Setup
+        uses: pnpm/action-setup@v6
+
+      # Install dependencies
+      - name: Install Node Dependencies
+        run: pnpm install
+
+      # Run the deploy
+      - name: CDK Deploy
+        run: pnpm run deploy
